@@ -3,14 +3,22 @@
 #include <random>
 #include <utility>
 #include <map>
+#include <future>
+#include <thread>
+#include <chrono>
 #include "guitarNeck.hpp"
 #include "xShape.hpp"
 #include "button.hpp"
 #include "resources.hpp"
 
+using namespace std::chrono_literals;
+
 const float SCREEN_W = 1600.f;
 const float SCREEN_H = 400.f;
 const float NECK_H = 200.f;
+
+void guessed();
+std::future<void> guess_thread;
 
 std::random_device rd;
 std::mt19937 gen(rd());
@@ -87,6 +95,7 @@ void pollEvents(sf::RenderWindow& window) {
          }
          if (not clicked) break;
          buttons.at(current_note).setFillColor(sf::Color::Green);
+         guess_thread = std::async(guessed);
          break;
       }
       default:
@@ -97,8 +106,13 @@ void pollEvents(sf::RenderWindow& window) {
 
 void newRandomNote()
 {
-   auto [fret, string] = getRandomNote();
-   current_note = (string_note_offsets.at(string) + fret) % 12;
+   int new_note = current_note;
+   int fret, string;
+   while (new_note == current_note)
+   {
+      std::tie(fret, string) = getRandomNote();
+      current_note = (string_note_offsets.at(string) + fret) % 12;
+   }
 
    open_string = fret == 0;
 
@@ -106,6 +120,14 @@ void newRandomNote()
    fret_indicator.setPosition(guitar_neck.getNotePos(fret, string));
 
    // playNote((string - 1) * 13 + fret);
+}
+
+void guessed()
+{
+   std::this_thread::sleep_for(1000ms);
+   for (Button& button : buttons)
+      button.setFillColor(sf::Color::Blue);
+   newRandomNote();
 }
 
 void setupButtons()
