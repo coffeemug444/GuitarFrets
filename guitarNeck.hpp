@@ -15,6 +15,8 @@ private:
    void prepareDot(sf::CircleShape& dot);
    float fretDistance(int fret) const;
 
+   const sf::Color m_grey{0x606060ff};
+
    float m_pad_y;
    float m_pad_x;
    float m_neck_length;
