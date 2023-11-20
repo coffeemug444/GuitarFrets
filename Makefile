@@ -1,4 +1,4 @@
-LIBS_ = sfml-graphics sfml-window sfml-system
+LIBS_ = sfml-graphics sfml-window sfml-system sfml-audio
 LIBS = $(patsubst %,-l%,$(LIBS_))
 
 SRC=main.cpp guitarNeck.cpp button.cpp

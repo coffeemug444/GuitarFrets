@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <cmath>
 #include <random>
 #include <utility>
@@ -6,6 +7,7 @@
 #include <future>
 #include <thread>
 #include <chrono>
+#include <sstream>
 #include "guitarNeck.hpp"
 #include "xShape.hpp"
 #include "button.hpp"
@@ -28,6 +30,9 @@ std::uniform_int_distribution<> stringDistr(1, 6);
 GuitarNeck guitar_neck{SCREEN_W, NECK_H};
 sf::CircleShape fret_indicator;
 XShape open_string_indicator;
+
+sf::SoundBuffer sound_buffer;
+sf::Sound sound;
 
 bool open_string = false;
 
@@ -104,6 +109,14 @@ void pollEvents(sf::RenderWindow& window) {
    }
 }
 
+void playNote(int note)
+{
+   std::stringstream pathbuilder;
+   pathbuilder << "samples/" << note << ".wav";
+   sound_buffer.loadFromFile(pathbuilder.str());
+   sound.play();
+}
+
 void newRandomNote()
 {
    int new_note = current_note;
@@ -119,7 +132,7 @@ void newRandomNote()
    open_string_indicator.setPosition(guitar_neck.getNotePos(fret, string));
    fret_indicator.setPosition(guitar_neck.getNotePos(fret, string));
 
-   // playNote((string - 1) * 13 + fret);
+   playNote((6 - string) * 13 + fret);
 }
 
 void guessed()
@@ -145,6 +158,7 @@ void setupButtons()
 int main()
 {
    RS::init();
+   sound.setBuffer(sound_buffer);
 
    sf::RenderWindow window(sf::VideoMode(SCREEN_W, SCREEN_H), "SFML works!");
 
