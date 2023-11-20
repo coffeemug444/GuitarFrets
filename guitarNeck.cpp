@@ -75,8 +75,8 @@ void GuitarNeck::draw(sf::RenderTarget& target, sf::RenderStates) const
    target.draw(m_bottom);
    target.draw(m_nut);
    
-   target.draw(m_strings);
    target.draw(m_frets);
+   target.draw(m_strings);
 }
 
 void GuitarNeck::prepareDot(sf::CircleShape &dot)
