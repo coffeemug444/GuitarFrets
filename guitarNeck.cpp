@@ -13,14 +13,16 @@ GuitarNeck::GuitarNeck(float width, float height)
    m_neck_length = width - 2*m_pad_x;
    m_neck_height = height - 2*m_pad_y;
 
-   m_top.setSize({m_neck_length, 3.f});
-   m_top.move({m_pad_x, m_pad_y});
+   float nut_w = 6.f;
 
-   m_bottom.setSize({m_neck_length, 3.f});
-   m_bottom.move({m_pad_x, m_pad_y + m_neck_height});
+   m_top.setSize({m_neck_length + nut_w, 3.f});
+   m_top.move({m_pad_x - nut_w, m_pad_y - 3.f});
 
-   m_nut.setSize({6.f, m_neck_height});
-   m_nut.move({m_pad_x, m_pad_y});
+   m_bottom.setSize({m_neck_length + nut_w, 3.f});
+   m_bottom.move({m_pad_x - nut_w, m_pad_y + m_neck_height});
+
+   m_nut.setSize({nut_w, m_neck_height});
+   m_nut.move({m_pad_x - nut_w, m_pad_y});
 
    float full_neck_length = 2*m_neck_length;
 
@@ -94,6 +96,7 @@ float GuitarNeck::fretDistance(int fret) const
 sf::Vector2f GuitarNeck::getNotePos(int fret, int string) const
 {
    float ypos = m_pad_y + string * m_neck_height / 7.f;
-   float xpos = m_pad_x + fretDistance(fret);
+   float xpos = m_pad_x;
+   if (fret > 0) xpos += fretDistance(fret);
    return sf::Vector2f{xpos, ypos};
 }
