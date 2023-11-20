@@ -1,8 +1,8 @@
 LIBS_ = sfml-graphics sfml-window sfml-system
 LIBS = $(patsubst %,-l%,$(LIBS_))
 
-SRC=main.cpp guitarNeck.cpp
-DEPS=guitarNeck.hpp xShape.hpp $(SRC)
+SRC=main.cpp guitarNeck.cpp button.cpp
+DEPS=guitarNeck.hpp xShape.hpp button.hpp resources.hpp $(SRC)
 
 main: $(DEPS)
 	g++ -g -o $@ $(SRC) $(LIBS)

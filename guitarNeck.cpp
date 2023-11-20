@@ -1,8 +1,6 @@
 #include "guitarNeck.hpp"
 #include <cmath>
 
-#include <iostream>
-
 GuitarNeck::GuitarNeck(float width, float height)
 {
    m_strings.setPrimitiveType(sf::Lines);
