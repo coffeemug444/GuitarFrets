@@ -5,7 +5,7 @@ SRC=main.cpp guitarNeck.cpp button.cpp
 DEPS=guitarNeck.hpp xShape.hpp button.hpp resources.hpp $(SRC)
 
 main: $(DEPS)
-	g++ -g -o $@ $(SRC) $(LIBS)
+	g++ -std=c++20 -g -o $@ $(SRC) $(LIBS)
 
 .PHONY: clean
 clean:
