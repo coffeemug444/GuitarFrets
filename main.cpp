@@ -259,6 +259,7 @@ int main()
    sound.setBuffer(sound_buffer);
 
    sf::RenderWindow window(sf::VideoMode(SCREEN_W, SCREEN_H), "SFML works!");
+   window.setFramerateLimit(60);
 
    fret_indicator.setFillColor(sf::Color::Green);
    fret_indicator.setRadius(10.f);
