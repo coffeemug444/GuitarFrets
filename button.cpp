@@ -1,7 +1,7 @@
 #include "button.hpp"
 #include "resources.hpp"
 
-Button::Button(const std::string& str)
+Button::Button(const sf::String& str)
 :m_text(str, RS::font)
 {
 }

@@ -50,16 +50,16 @@ std::map<int, int> string_note_offsets {
 
 std::vector<Button> guessButtons {
    {"C"},
-   {"C#"},
+   {L"C#\nD\u266D"},
    {"D"},
-   {"D#"},
+   {L"D#\nE\u266D"},
    {"E"},
    {"F"},
-   {"F#"},
+   {L"F#\nG\u266D"},
    {"G"},
-   {"G#"},
+   {L"G#\nA\u266D"},
    {"A"},
-   {"A#"},
+   {L"A#\nB\u266D"},
    {"B"},
    {"back"}
 };

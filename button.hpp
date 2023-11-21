@@ -4,7 +4,7 @@
 class Button : public sf::Drawable
 {
 public:
-   Button(const std::string& str);
+   Button(const sf::String& str);
    void setSize(const sf::Vector2f& size);
    void setPosition(const sf::Vector2f& position);
    void setFillColor(const sf::Color& color);
