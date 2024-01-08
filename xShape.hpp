@@ -5,12 +5,12 @@
 class XShape : public sf::Drawable
 {
 public:
-   XShape() {
-      m_decl.setSize({25.f, 5.f});
-      m_decl.setOrigin({12.5f, 2.5f});
+   XShape(float size) {
+      m_decl.setSize({size, size/5.f});
+      m_decl.setOrigin({size/2.f, size/10.f});
 
-      m_incl.setSize({25.f, 5.f});
-      m_incl.setOrigin({12.5f, 2.5f});
+      m_incl.setSize({size, size/5.f});
+      m_incl.setOrigin({size/2.f, size/10.f});
 
       m_decl.rotate(45.f);
       m_incl.rotate(-45.f);

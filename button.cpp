@@ -8,6 +8,10 @@ Button::Button(const sf::String& str)
 
 void Button::setSize(const sf::Vector2f& size)
 {
+   
+   float scale = size.y/100.f;
+   m_text.setCharacterSize(30 * scale);
+   
    m_background.setSize(size);
    sf::FloatRect text_bounds = m_text.getGlobalBounds();
    float ypos = m_background.getPosition().y + (size.y - text_bounds.height)/2.f;

@@ -4,6 +4,7 @@
 #include <random>
 #include <utility>
 #include <map>
+#include <deque>
 #include <future>
 #include <thread>
 #include <chrono>
@@ -15,14 +16,15 @@
 
 using namespace std::chrono_literals;
 
-const float SCREEN_W = 1600.f;
-const float SCREEN_H = 600.f;
-const float NECK_H = 200.f;
+const float SCREEN_W = 800.f;
+const float SCREEN_H = 300.f;
+const float NECK_H = SCREEN_H/3;
 
 bool include_sharps = false;
 std::vector<int> included_strings {};
 bool menu = true;
 
+std::deque<int> last_3_notes;
 void newRandomNote();
 void guessed();
 std::future<void> guess_thread;
@@ -32,7 +34,7 @@ std::mt19937 gen(rd());
 
 GuitarNeck guitar_neck{SCREEN_W, NECK_H};
 sf::CircleShape fret_indicator;
-XShape open_string_indicator;
+XShape open_string_indicator{SCREEN_H/24.f};
 
 sf::SoundBuffer sound_buffer;
 sf::Sound sound;
@@ -202,13 +204,16 @@ void playNote(int note)
 
 void newRandomNote()
 {
-   int new_note = current_note;
-   int fret, string;
-   while (new_note == current_note)
+   int new_note, fret, string;
+   // want a note than was not in the last 3
+   do
    {
       std::tie(fret, string) = getRandomNote();
       current_note = (string_note_offsets.at(string) + fret) % 12;
-   }
+   } while (std::find(last_3_notes.begin(), last_3_notes.end(), new_note) != last_3_notes.end());
+
+   last_3_notes.push_front(new_note);
+   last_3_notes.pop_back();
 
    open_string = fret == 0;
 
@@ -231,22 +236,23 @@ void guessed()
 
 void setupButtons()
 {
-   float padding = (SCREEN_W - 12 * 100.f) / 13.f;
+   float button_size = SCREEN_W / 13.f;
+   float padding = (SCREEN_W - 12 * button_size) / 13.f;
 
-   guessButtons.back().setSize({100.f,100.f});
-   guessButtons.back().setPosition({padding, NECK_H + (650 - NECK_H - 100.f) / 2.f});
+   guessButtons.back().setSize({button_size,button_size});
+   guessButtons.back().setPosition({padding, NECK_H + button_size + 2*padding});
    guessButtons.back().setFillColor(sf::Color::Green);
    for (int i = 0; i < 12; i++)
    {
-      guessButtons.at(i).setSize({100.f,100.f});
-      guessButtons.at(i).setPosition({i*100.f + (i+1)*padding, NECK_H + (400 - NECK_H - 100.f) / 2.f});
+      guessButtons.at(i).setSize({button_size,button_size});
+      guessButtons.at(i).setPosition({i*button_size + (i+1)*padding, NECK_H + padding});
       guessButtons.at(i).setFillColor(sf::Color::Blue);
    }
 
    for (int i = 0; Button& button : menuButtons)
    {
-      button.setSize({100.f,100.f});
-      button.setPosition({i*100.f + (i+1)*padding, NECK_H + (400 - NECK_H - 100.f) / 2.f});
+      button.setSize({button_size,button_size});
+      button.setPosition({i*button_size + (i+1)*padding, NECK_H + padding});
       button.setFillColor(sf::Color::Green);
       i++;
    }
@@ -262,8 +268,9 @@ int main()
    window.setFramerateLimit(60);
 
    fret_indicator.setFillColor(sf::Color::Green);
-   fret_indicator.setRadius(10.f);
-   fret_indicator.setOrigin({10.f, 10.f});
+   float ind_r = SCREEN_H/60.f;
+   fret_indicator.setRadius(ind_r);
+   fret_indicator.setOrigin({ind_r, ind_r});
 
    open_string_indicator.setFillColor(sf::Color::Green);
 
