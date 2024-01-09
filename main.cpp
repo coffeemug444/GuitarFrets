@@ -204,16 +204,16 @@ void playNote(int note)
 
 void newRandomNote()
 {
-   int new_note, fret, string;
+   int fret, string;
    // want a note than was not in the last 3
    do
    {
       std::tie(fret, string) = getRandomNote();
       current_note = (string_note_offsets.at(string) + fret) % 12;
-   } while (std::find(last_3_notes.begin(), last_3_notes.end(), new_note) != last_3_notes.end());
+   } while (std::find(last_3_notes.begin(), last_3_notes.end(), current_note) != last_3_notes.end());
 
-   last_3_notes.push_front(new_note);
-   last_3_notes.pop_back();
+   last_3_notes.push_front(current_note);
+   if (last_3_notes.size() > 3) last_3_notes.pop_back();
 
    open_string = fret == 0;
 
