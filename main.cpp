@@ -24,7 +24,7 @@ bool include_sharps = false;
 std::vector<int> included_strings {};
 bool menu = true;
 
-std::deque<int> last_3_notes;
+std::deque<std::pair<int,int>> last_few_notes;
 void newRandomNote();
 void guessed();
 std::future<void> guess_thread;
@@ -77,7 +77,9 @@ std::vector<Button> menuButtons {
    {"begin"}
 };
 
-int current_note = 0;
+int note = 0;
+int fret = 0;
+int string = 0;
 
 std::pair<int, int> getRandomNote()
 {
@@ -124,7 +126,7 @@ void pollGuessButtons(const sf::Vector2f& point)
             return;
          }
          button.setFillColor(sf::Color::Red);
-         guessButtons.at(current_note).setFillColor(sf::Color::Green);
+         guessButtons.at(note).setFillColor(sf::Color::Green);
          guess_thread = std::async(guessed);
          return;
       }
@@ -204,16 +206,19 @@ void playNote(int note)
 
 void newRandomNote()
 {
-   int fret, string;
-   // want a note than was not in the last 3
-   do
-   {
-      std::tie(fret, string) = getRandomNote();
-      current_note = (string_note_offsets.at(string) + fret) % 12;
-   } while (std::find(last_3_notes.begin(), last_3_notes.end(), current_note) != last_3_notes.end());
+   int new_fret, new_string;
+   // want a new note that was not shown recently, and not immediately next to the last one
+   do std::tie(new_fret, new_string) = getRandomNote();
+   while (std::find(last_few_notes.begin(), 
+                    last_few_notes.end(), 
+                    std::make_pair(new_fret % 12, new_string)) != last_few_notes.end() ||
+          last_few_notes.size() > 0 && new_string == string && std::abs(new_fret - fret) % 12 <= 1);
 
-   last_3_notes.push_front(current_note);
-   if (last_3_notes.size() > 3) last_3_notes.pop_back();
+   last_few_notes.push_front(std::make_pair(new_fret % 12, new_string));
+   if (last_few_notes.size() > 3*included_strings.size()) last_few_notes.pop_back();
+
+   std::tie(fret, string) = {new_fret, new_string};
+   note = (string_note_offsets.at(string) + fret) % 12;
 
    open_string = fret == 0;
 
