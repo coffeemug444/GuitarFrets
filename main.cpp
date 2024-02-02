@@ -16,13 +16,22 @@
 
 using namespace std::chrono_literals;
 
-const float SCREEN_W = 800.f;
-const float SCREEN_H = 300.f;
+enum GuessMode
+{
+   FRET,
+   NOTE
+};
+
+const float SCREEN_W = 1600.f;
+const float SCREEN_H = 600.f;
 const float NECK_H = SCREEN_H/3;
 
 bool include_sharps = false;
 std::vector<int> included_strings {};
 bool menu = true;
+GuessMode guess_mode = NOTE;
+
+bool showing_correct = false;
 
 std::deque<std::pair<int,int>> last_few_notes;
 void newRandomNote();
@@ -35,6 +44,9 @@ std::mt19937 gen(rd());
 GuitarNeck guitar_neck{SCREEN_W, NECK_H};
 sf::CircleShape fret_indicator;
 XShape open_string_indicator{SCREEN_H/24.f};
+
+sf::CircleShape guess_fret_indicator;
+XShape guess_open_string_indicator{SCREEN_H/24.f};
 
 sf::SoundBuffer sound_buffer;
 sf::Sound sound;
@@ -74,14 +86,15 @@ std::vector<Button> menuButtons {
    {"A"},
    {"E"},
    {"Include\nsharps"},
-   {"begin"}
+   {"Guess\nfret"},
+   {"Guess\nnote"}
 };
 
 int note = 0;
 int fret = 0;
 int string = 0;
 
-std::pair<int, int> getRandomNote()
+std::pair<int, int> getRandomStringFretPair()
 {
    std::uniform_int_distribution<> stringDistr(0, included_strings.size() - 1);
    int string = included_strings.at(stringDistr(gen));
@@ -133,19 +146,97 @@ void pollGuessButtons(const sf::Vector2f& point)
    }
 }
 
+void pollFrets(const sf::Vector2f& point)
+{
+   if (guessButtons.back().mouseIsOver(point))
+   {
+      // back to menu
+      menu = true;
+      guitar_neck.resetStrings();
+      for (Button& button : guessButtons) {
+         if (button.mouseIsOver(point))
+         {
+            if (&button == &guessButtons.back()) break;
+            button.setFillColor(sf::Color::Blue);
+         }
+         return;
+      }
+   }
+
+   sf::FloatRect neck_bounds = guitar_neck.getGlobalBounds();
+   
+   // check if within the correct height
+   if (point.y > (neck_bounds.top + neck_bounds.height)) return;
+   if (point.y < neck_bounds.top) return;
+
+   // check if on the nut
+   
+   float first_fret_w = guitar_neck.getNotePos(1,1).x - neck_bounds.left;
+   if (point.x > (neck_bounds.left - first_fret_w*0.2f) &&
+       point.x < (neck_bounds.left + first_fret_w*0.2f))
+   {
+      // clicked nut
+      guess_fret_indicator.setFillColor(sf::Color::Transparent);
+      guess_open_string_indicator.setPosition(guitar_neck.getNotePos(0, string));
+      guess_open_string_indicator.setFillColor(sf::Color::Red);
+
+      if (fret == 12)
+      {
+         // it's also correct so this is counted
+         open_string_indicator.setPosition(guitar_neck.getNotePos(0, string));
+      }
+
+      guess_thread = std::async(guessed);
+      return;
+   }
+
+   if (not neck_bounds.contains(point)) return;
+
+   // definitely clicked one of the frets
+   guess_open_string_indicator.setFillColor(sf::Color::Transparent);
+   guess_fret_indicator.setFillColor(sf::Color::Red);
+
+   for (int i = 1; i <= 12; i++)
+   {
+      float fret_x = guitar_neck.getFretXPos(i);
+
+      if (point.x > fret_x) continue;
+      guess_fret_indicator.setPosition(guitar_neck.getNotePos(i, string));
+
+      if (i == 12 and fret == 0)
+      {
+         // it's also correct so this is counted
+         fret_indicator.setPosition(guitar_neck.getNotePos(12, string));
+      }
+      break;
+   }
+   guess_thread = std::async(guessed);
+}
+
 void pollMenuButtons(const sf::Vector2f& point)
 {
    for (int i = 1; Button& button : menuButtons) {
       if (button.mouseIsOver(point))
       {
-         if (&button == &menuButtons.back())
+         if (&button == &menuButtons.at(menuButtons.size() - 1))
          {
+            // guessing note
             if (included_strings.size() == 0) return;
+            guess_mode = NOTE;
             menu = false;
             newRandomNote();
             return;
          }
          if (&button == &menuButtons.at(menuButtons.size() - 2))
+         {
+            // guessing fret
+            if (included_strings.size() == 0) return;
+            guess_mode = FRET;
+            menu = false;
+            newRandomNote();
+            return;
+         }
+         if (&button == &menuButtons.at(menuButtons.size() - 3))
          {
             include_sharps = !include_sharps;
             button.setFillColor(include_sharps ? sf::Color::Blue : sf::Color::Green);
@@ -188,7 +279,17 @@ void pollEvents(sf::RenderWindow& window) {
          float x = static_cast<float>(event.mouseButton.x);
          float y = static_cast<float>(event.mouseButton.y);
          sf::Vector2f point {x, y};
-         menu ? pollMenuButtons(point) : pollGuessButtons(point);
+         if (menu)
+         {
+            pollMenuButtons(point);
+         }
+         else
+         {
+            if (guess_mode == NOTE)
+               pollGuessButtons(point);
+            else
+               pollFrets(point);
+         }
       }
       default:
          break;
@@ -204,11 +305,42 @@ void playNote(int note)
    sound.play();
 }
 
-void newRandomNote()
+void newRandomNoteFretMode()
+{
+   guitar_neck.resetStrings();
+   showing_correct = false;
+
+   int new_fret, new_string;
+   // want a new note that was not shown recently, and not immediately next to the last one
+   do std::tie(new_fret, new_string) = getRandomStringFretPair();
+   while (std::find(last_few_notes.begin(), 
+                    last_few_notes.end(), 
+                    std::make_pair(new_fret % 12, new_string)) != last_few_notes.end() ||
+          last_few_notes.size() > 0 && new_string == string && std::abs(new_fret - fret) % 12 <= 1);
+
+   last_few_notes.push_front(std::make_pair(new_fret % 12, new_string));
+   if (last_few_notes.size() > 3*included_strings.size()) last_few_notes.pop_back();
+
+   std::tie(fret, string) = {new_fret, new_string};
+   note = (string_note_offsets.at(string) + fret) % 12;
+
+   guitar_neck.highlightString(string);
+
+   open_string_indicator.setPosition(guitar_neck.getNotePos(fret, string));
+   fret_indicator.setPosition(guitar_neck.getNotePos(fret, string));
+   open_string = fret == 0;
+
+   for (int i = 0; i < guessButtons.size() - 1; i++)
+   {
+      guessButtons.at(i).setFillColor(i == note ? sf::Color::Green : sf::Color::Blue);
+   }
+}
+
+void newRandomNoteNoteMode()
 {
    int new_fret, new_string;
    // want a new note that was not shown recently, and not immediately next to the last one
-   do std::tie(new_fret, new_string) = getRandomNote();
+   do std::tie(new_fret, new_string) = getRandomStringFretPair();
    while (std::find(last_few_notes.begin(), 
                     last_few_notes.end(), 
                     std::make_pair(new_fret % 12, new_string)) != last_few_notes.end() ||
@@ -228,9 +360,25 @@ void newRandomNote()
    playNote((6 - string) * 13 + fret);
 }
 
+void newRandomNote()
+{
+   if (guess_mode == NOTE)
+   {
+      newRandomNoteNoteMode();
+   }
+   else
+   {
+      newRandomNoteFretMode();
+   }
+}
+
 void guessed()
 {
+   showing_correct = true;
    std::this_thread::sleep_for(1000ms);
+   showing_correct = false;
+   guess_open_string_indicator.setFillColor(sf::Color::Transparent);
+   guess_fret_indicator.setFillColor(sf::Color::Transparent);
    for (Button& button : guessButtons)
    {
       if (&button == &guessButtons.back()) continue;
@@ -276,10 +424,14 @@ int main()
    float ind_r = SCREEN_H/60.f;
    fret_indicator.setRadius(ind_r);
    fret_indicator.setOrigin({ind_r, ind_r});
+   guess_fret_indicator.setRadius(ind_r);
+   guess_fret_indicator.setOrigin({ind_r, ind_r});
 
    open_string_indicator.setFillColor(sf::Color::Green);
 
    setupButtons();
+
+   guess_fret_indicator.getGlobalBounds();
 
    while (window.isOpen())
    {
@@ -294,8 +446,22 @@ int main()
       else
       {
          window.draw(guitar_neck);
-         if (open_string) window.draw(open_string_indicator);
-         else window.draw(fret_indicator);
+         if (guess_mode == NOTE)
+         {
+            if (open_string) window.draw(open_string_indicator);
+            else window.draw(fret_indicator);
+         }
+         else
+         {
+            window.draw(guess_open_string_indicator);
+            window.draw(guess_fret_indicator);
+
+            if (showing_correct)
+            {
+               if (open_string) window.draw(open_string_indicator);
+               else window.draw(fret_indicator);
+            }
+         }
          for (const Button& button : guessButtons)
             window.draw(button);
       }

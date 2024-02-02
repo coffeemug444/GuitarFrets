@@ -2,10 +2,9 @@
 #include <cmath>
 
 GuitarNeck::GuitarNeck(float width, float height)
+:m_strings(sf::Lines, 12)
+,m_frets(sf::Lines, 24)
 {
-   m_strings.setPrimitiveType(sf::Lines);
-   m_frets.setPrimitiveType(sf::Lines);
-
    m_pad_y = 0.1f * height;
    m_pad_x = 0.02f * width;
    m_neck_length = width - 2*m_pad_x;
@@ -32,17 +31,11 @@ GuitarNeck::GuitarNeck(float width, float height)
       float factor = std::pow(2.f, -i/12.f);
       float xpos = full_neck_length * (1 - factor);
 
-      m_frets.append(sf::Vertex{sf::Vector2f{m_pad_x + xpos, m_pad_y},m_grey});
-      m_frets.append(sf::Vertex{sf::Vector2f{m_pad_x + xpos, m_pad_y + m_neck_height},m_grey});
+      m_frets[2*(i-1)] = sf::Vertex{sf::Vector2f{m_pad_x + xpos, m_pad_y},m_grey};
+      m_frets[2*(i-1)+1] = sf::Vertex{sf::Vector2f{m_pad_x + xpos, m_pad_y + m_neck_height},m_grey};
    }
 
-   float pad_y_inner = m_neck_height * 0.08f;
-   for (int i = 0; i < 6; i++)
-   {
-      float ypos = m_pad_y + pad_y_inner + i*0.84f*m_neck_height/5.f;
-      m_strings.append(sf::Vertex{sf::Vector2f{m_pad_x, ypos},sf::Color::White});
-      m_strings.append(sf::Vertex{sf::Vector2f{m_pad_x + m_neck_length, ypos},sf::Color::White});
-   }
+   resetStrings();
 
    prepareDot(m_three);
    prepareDot(m_five);
@@ -55,11 +48,28 @@ GuitarNeck::GuitarNeck(float width, float height)
    m_twelve2.move({0,-m_neck_height/6.f});
 
    m_three.move({fretDistance(3),0});
-   m_five.move({fretDistance(5)},0);
-   m_seven.move({fretDistance(7)},0);
-   m_nine.move({fretDistance(9)},0);
+   m_five.move({fretDistance(5),0});
+   m_seven.move({fretDistance(7),0});
+   m_nine.move({fretDistance(9),0});
    m_twelve1.move({fretDistance(12), 0});
    m_twelve2.move({fretDistance(12), 0});
+}
+
+void GuitarNeck::resetStrings()
+{
+   for (int string = 1; string <= 6; string++)
+   {
+      setString(string, sf::Color::White);
+   }
+}
+
+void GuitarNeck::setString(int string, sf::Color color)
+{
+   int i = string - 1;
+   float pad_y_inner = m_neck_height * 0.08f;
+   float ypos = m_pad_y + pad_y_inner + i*0.84f*m_neck_height/5.f;
+   m_strings[2*i] = sf::Vertex{sf::Vector2f{m_pad_x, ypos},color};
+   m_strings[2*i+1] = sf::Vertex{sf::Vector2f{m_pad_x + m_neck_length, ypos},color};
 }
 
 void GuitarNeck::draw(sf::RenderTarget& target, sf::RenderStates) const
@@ -94,6 +104,23 @@ float GuitarNeck::fretDistance(int fret) const
    return (2 * m_neck_length) * (1 - factor);
 }
 
+
+sf::FloatRect GuitarNeck::getGlobalBounds() const
+{
+   return sf::FloatRect {
+      // position vec2f
+      {m_pad_x, m_pad_y},
+
+      // size vec2f
+      {m_neck_length, m_neck_height}
+   };
+}
+
+void GuitarNeck::highlightString(int string)
+{
+   setString(string, sf::Color::Blue);
+}
+
 sf::Vector2f GuitarNeck::getNotePos(int fret, int string) const
 {
    float pad_y_inner = m_neck_height * 0.08f;
@@ -101,4 +128,11 @@ sf::Vector2f GuitarNeck::getNotePos(int fret, int string) const
    float xpos = m_pad_x;
    if (fret > 0) xpos += fretDistance(fret);
    return sf::Vector2f{xpos, ypos};
+}
+
+
+float GuitarNeck::getFretXPos(int fret) const
+{
+   float factor = std::pow(2.f, -fret/12.f);
+   return m_pad_x + (2 * m_neck_length) * (1 - factor);
 }

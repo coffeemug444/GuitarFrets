@@ -10,10 +10,17 @@ public:
    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
    sf::Vector2f getNotePos(int fret, int string) const;
+   float getFretXPos(int fret) const;
+   sf::FloatRect getGlobalBounds() const;
+
+   void highlightString(int string);
+   void resetStrings();
 
 private:
    void prepareDot(sf::CircleShape& dot);
    float fretDistance(int fret) const;
+
+   void setString(int string, sf::Color color);
 
    const sf::Color m_grey{0x606060ff};
 
