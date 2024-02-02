@@ -184,6 +184,7 @@ void pollFrets(const sf::Vector2f& point)
       {
          // it's also correct so this is counted
          open_string_indicator.setPosition(guitar_neck.getNotePos(0, string));
+         open_string = true;
       }
 
       guess_thread = std::async(guessed);
@@ -207,6 +208,7 @@ void pollFrets(const sf::Vector2f& point)
       {
          // it's also correct so this is counted
          fret_indicator.setPosition(guitar_neck.getNotePos(12, string));
+         open_string = false;
       }
       break;
    }
