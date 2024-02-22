@@ -154,13 +154,10 @@ void pollFrets(const sf::Vector2f& point)
       menu = true;
       guitar_neck.resetStrings();
       for (Button& button : guessButtons) {
-         if (button.mouseIsOver(point))
-         {
-            if (&button == &guessButtons.back()) break;
-            button.setFillColor(sf::Color::Blue);
-         }
-         return;
+         if (&button == &guessButtons.back()) break;
+         button.setFillColor(sf::Color::Blue);
       }
+      return;
    }
 
    sf::FloatRect neck_bounds = guitar_neck.getGlobalBounds();
