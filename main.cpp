@@ -416,7 +416,7 @@ int main()
    RS::init();
    sound.setBuffer(sound_buffer);
 
-   sf::RenderWindow window(sf::VideoMode(SCREEN_W, SCREEN_H), "SFML works!");
+   sf::RenderWindow window(sf::VideoMode(SCREEN_W, SCREEN_H), "Guitar Frets", sf::Style::Titlebar | sf::Style::Close);
    window.setFramerateLimit(60);
 
    fret_indicator.setFillColor(sf::Color::Green);
